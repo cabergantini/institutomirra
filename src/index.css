@@ -1,0 +1,34 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-heading: 'Cinzel', Georgia, 'Times New Roman', serif;
+  --font-body: 'Crimson Pro', Georgia, 'Times New Roman', serif;
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+  body {
+    @apply bg-stone-200 text-stone-900;
+    font-family: var(--font-body);
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-heading);
+  }
+  input,
+  select,
+  textarea {
+    font-family: inherit;
+  }
+}
+
+.parchment {
+  background-color: #f4ecd8;
+  background-image:
+    radial-gradient(ellipse at top left, rgba(139, 94, 52, 0.08), transparent 60%),
+    radial-gradient(ellipse at bottom right, rgba(139, 94, 52, 0.08), transparent 60%);
+}
