@@ -76,6 +76,7 @@ export interface Weapon {
 
 export interface Character {
   id: string
+  ownerId: string
   name: string
   player: string
   race: string

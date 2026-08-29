@@ -1,10 +1,11 @@
 import { nanoid } from 'nanoid'
 import type { Character } from './types'
 
-export function newCharacter(name = 'Novo Aventureiro'): Character {
+export function newCharacter(ownerId: string, name = 'Novo Aventureiro'): Character {
   const now = Date.now()
   return {
     id: nanoid(),
+    ownerId,
     name,
     player: '',
     race: 'Humano',

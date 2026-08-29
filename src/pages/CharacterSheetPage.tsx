@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useAuth } from '../auth/AuthContext'
 import { deriveStats, pointsSummary } from '../gurps/calculations'
 import { AttributesPanel } from '../components/AttributesPanel'
 import { CharacterHeaderPanel } from '../components/CharacterHeaderPanel'
@@ -9,29 +11,56 @@ import { SecondaryPanel } from '../components/SecondaryPanel'
 import { SkillsPanel } from '../components/SkillsPanel'
 import { SpellsPanel } from '../components/SpellsPanel'
 import { TraitList } from '../components/TraitList'
+import { XpHistoryPanel } from '../components/XpHistoryPanel'
 import { Panel } from '../components/ui'
+import { listXpGrants, type XpGrant } from '../data/charactersApi'
 import { useCharacterStore } from '../store/characterStore'
 import type { Character } from '../gurps/types'
 
 export function CharacterSheetPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { profile } = useAuth()
   const character = useCharacterStore((s) => s.characters.find((c) => c.id === id))
+  const loading = useCharacterStore((s) => s.loading)
+  const fetchAll = useCharacterStore((s) => s.fetchAll)
   const updateCharacter = useCharacterStore((s) => s.updateCharacter)
+  const flush = useCharacterStore((s) => s.flush)
+  const [xpGrants, setXpGrants] = useState<XpGrant[]>([])
+
+  useEffect(() => {
+    if (!character && !loading) fetchAll()
+  }, [character, loading, fetchAll])
+
+  useEffect(() => {
+    if (!id) return
+    return () => {
+      flush(id)
+    }
+  }, [id, flush])
+
+  useEffect(() => {
+    if (!id) return
+    listXpGrants(id).then(setXpGrants).catch(() => {})
+  }, [id, character?.totalPoints])
 
   if (!character) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-16 text-center">
-        <p className="text-lg text-stone-600">Ficha não encontrada.</p>
-        <button
-          onClick={() => navigate('/')}
-          className="mt-4 rounded bg-amber-800 px-4 py-2 font-medium text-amber-50 hover:bg-amber-900"
-        >
-          Voltar para a lista
-        </button>
+        <p className="text-lg text-stone-600">{loading ? 'Carregando ficha…' : 'Ficha não encontrada.'}</p>
+        {!loading && (
+          <button
+            onClick={() => navigate('/')}
+            className="mt-4 rounded bg-amber-800 px-4 py-2 font-medium text-amber-50 hover:bg-amber-900"
+          >
+            Voltar para a lista
+          </button>
+        )}
       </div>
     )
   }
+
+  const canEditPoints = profile?.role === 'narrador'
 
   function patch(p: Partial<Character>) {
     updateCharacter(character!.id, p)
@@ -54,7 +83,13 @@ export function CharacterSheetPage() {
     <div className="parchment min-h-screen pb-16">
       <div className="mx-auto max-w-6xl px-4 py-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <button onClick={() => navigate('/')} className="text-sm font-medium text-amber-900 hover:underline">
+          <button
+            onClick={() => {
+              flush(character.id)
+              navigate('/')
+            }}
+            className="text-sm font-medium text-amber-900 hover:underline"
+          >
             ← Todas as fichas
           </button>
           <div className="flex gap-2">
@@ -75,7 +110,7 @@ export function CharacterSheetPage() {
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_260px]">
           <div className="flex flex-col gap-4">
-            <CharacterHeaderPanel character={character} onChange={patch} />
+            <CharacterHeaderPanel character={character} canEditPoints={canEditPoints} onChange={patch} />
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <AttributesPanel attributes={character.attributes} onChange={(attributes) => patch({ attributes })} />
@@ -139,6 +174,8 @@ export function CharacterSheetPage() {
                 placeholder="Histórico, ganchos de aventura, contatos, observações do mestre..."
               />
             </Panel>
+
+            <XpHistoryPanel grants={xpGrants} />
           </div>
 
           <div className="flex flex-col gap-4">
